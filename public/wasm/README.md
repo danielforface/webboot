@@ -1,4 +1,4 @@
-Place the compiled kernel binary here as os-kernel.wasm.
+Place the compiled kernel binary here as core-os.wasm.
 
 Expected command (from repository root):
 
@@ -10,4 +10,4 @@ os-kernel/target/wasm32-unknown-unknown/release/os-kernel.wasm
 
 into this directory as:
 
-public/wasm/os-kernel.wasm
+public/wasm/core-os.wasm

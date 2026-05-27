@@ -1,7 +1,7 @@
 # WebBoot
 
-WebBoot is a blueprint project for a WebAssembly-native, single-address-space OS runtime
-hosted inside a Next.js application.
+WebBoot hosts the Everywhere Nomadic OS scaffold: a browser-native runtime with
+shared-memory wasm execution, dirty-page delta sync, and instant session roaming.
 
 ## Quick Start
 
@@ -16,8 +16,8 @@ npm run dev
 cargo build --manifest-path os-kernel/Cargo.toml --target wasm32-unknown-unknown --release
 ```
 
-Copy the generated wasm to public/wasm/os-kernel.wasm and refresh the app.
+Copy the generated wasm to public/wasm/core-os.wasm and refresh the app.
 
 ## Design Specification
 
-See docs/architecture.md for the full system architecture, constraints, and boot pipeline.
+See docs/framework-spec.md for the full system architecture, constraints, and boot pipeline.

@@ -1,0 +1,55 @@
+package everywhere:os-core@0.1.0;
+
+interface system-types {
+  type page-index = u32;
+
+  record memory-delta {
+    page: page-index,
+    raw-bytes: list<u8>,
+  }
+
+  record ui-event {
+    event-type: u32,
+    param-a: f32,
+    param-b: f32,
+    modifier-flags: u32,
+  }
+
+  record window-bounds {
+    x: f32,
+    y: f32,
+    width: f32,
+    height: f32,
+    z-index: u32,
+    opacity: f32,
+  }
+
+  record transform-matrix {
+    m11: f32,
+    m12: f32,
+    m21: f32,
+    m22: f32,
+    tx: f32,
+    ty: f32,
+  }
+
+  record window-node {
+    id: u32,
+    bounds: window-bounds,
+    flags: u32,
+    alpha: f32,
+    blur-radius: f32,
+    transform: transform-matrix,
+  }
+}
+
+world core-os {
+  import host-sync: func(deltas: list<system-types::memory-delta>) -> s32;
+  import host-log: func(msg: string);
+
+  export os-boot: func(ram-bytes: u32, flags: u32) -> s32;
+  export os-suspend: func() -> s32;
+  export os-resume: func(session-id: string) -> s32;
+  export os-process-input: func(event: system-types::ui-event);
+  export os-get-render-tree: func() -> list<system-types::window-node>;
+}

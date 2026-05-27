@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "WebBoot | WASM Native OS",
-  description: "Single address space OS runtime hosted inside a Next.js shell",
+  title: "Everywhere OS | Nomadic Runtime",
+  description: "Browser-native operating system shell with WASM linear-memory roaming",
 };
 
 export default function RootLayout({
