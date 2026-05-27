@@ -1,0 +1,108 @@
+:root {
+  --base-0: #09121a;
+  --base-1: #102433;
+  --base-2: #173a51;
+  --accent-0: #7fffd4;
+  --accent-1: #f7b267;
+  --text-0: #e8f3ff;
+  --text-1: #b2c6d9;
+  --edge: rgba(127, 255, 212, 0.25);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+  color: var(--text-0);
+  background:
+    radial-gradient(130% 120% at 0% 0%, #1f4f6f 0%, transparent 48%),
+    radial-gradient(100% 100% at 100% 0%, #38574f 0%, transparent 44%),
+    linear-gradient(155deg, var(--base-0) 0%, var(--base-1) 48%, var(--base-2) 100%);
+}
+
+.shell {
+  display: grid;
+  gap: 1.5rem;
+  min-height: 100vh;
+  padding: 1.5rem;
+}
+
+.shell-header {
+  max-width: 70rem;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-1);
+}
+
+h1 {
+  margin: 0.3rem 0 0.5rem;
+  font-size: clamp(1.8rem, 3vw, 3rem);
+  line-height: 1.05;
+}
+
+.summary {
+  margin: 0;
+  max-width: 65ch;
+  color: var(--text-1);
+}
+
+.viewport-shell {
+  display: grid;
+  gap: 0.8rem;
+  max-width: 92rem;
+}
+
+.viewport-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.8rem 1rem;
+  border-radius: 0.7rem;
+  border: 1px solid var(--edge);
+  background: rgba(10, 22, 32, 0.55);
+}
+
+.viewport-canvas {
+  width: 100%;
+  height: auto;
+  border-radius: 0.85rem;
+  border: 1px solid var(--edge);
+  background: #01070c;
+  image-rendering: pixelated;
+}
+
+.telemetry-stream {
+  margin: 0;
+  padding: 0.95rem 1rem;
+  min-height: 12rem;
+  border-radius: 0.7rem;
+  border: 1px solid var(--edge);
+  background: rgba(0, 0, 0, 0.42);
+  color: #ccffe7;
+  font: 500 0.84rem/1.35 "IBM Plex Mono", "Cascadia Mono", monospace;
+  white-space: pre-wrap;
+  overflow: auto;
+}
+
+@media (max-width: 800px) {
+  .shell {
+    padding: 1rem;
+  }
+
+  .viewport-status {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
