@@ -1,11 +1,44 @@
-package everywhere:os-core@0.1.0;
+package everywhere:os-core@0.2.0;
 
 interface system-types {
   type page-index = u32;
+  type app-id = u32;
+  type window-id = u32;
+
+  enum app-status {
+    cold,
+    loading,
+    running,
+    suspended,
+    faulted,
+  }
+
+  record page-run {
+    start: page-index,
+    count: u32,
+  }
 
   record memory-delta {
+    sequence: u32,
     page: page-index,
+    encoding: u32,
     raw-bytes: list<u8>,
+  }
+
+  record memory-compact-block {
+    sequence: u32,
+    runs: list<page-run>,
+    payload: list<u8>,
+  }
+
+  record app-descriptor {
+    id: app-id,
+    window: window-id,
+    kind: u32,
+    status: app-status,
+    arena-offset: u32,
+    arena-length: u32,
+    source-path: string,
   }
 
   record ui-event {
@@ -22,6 +55,8 @@ interface system-types {
     height: f32,
     z-index: u32,
     opacity: f32,
+    depth: f32,
+    blur-radius: f32,
   }
 
   record transform-matrix {
@@ -34,22 +69,55 @@ interface system-types {
   }
 
   record window-node {
-    id: u32,
+    id: window-id,
     bounds: window-bounds,
     flags: u32,
     alpha: f32,
-    blur-radius: f32,
     transform: transform-matrix,
+  }
+
+  record terminal-cell {
+    rune: u32,
+    fg: u32,
+    bg: u32,
+    attrs: u32,
+  }
+
+  record terminal-grid {
+    cols: u16,
+    rows: u16,
+    cursor-x: u16,
+    cursor-y: u16,
+    cells: list<terminal-cell>,
+  }
+
+  record system-metrics {
+    tick-low: u32,
+    tick-high: u32,
+    total-pages: u32,
+    dirty-pages: u32,
+    active-apps: u32,
+    pending-input: u32,
+    compaction-seq: u32,
+    compacted-pages: u32,
   }
 }
 
 world core-os {
-  import host-sync: func(deltas: list<system-types::memory-delta>) -> s32;
+  import host-sync-fragment: func(block: system-types::memory-compact-block) -> s32;
+  import host-sync-delta: func(deltas: list<system-types::memory-delta>) -> s32;
   import host-log: func(msg: string);
 
   export os-boot: func(ram-bytes: u32, flags: u32) -> s32;
   export os-suspend: func() -> s32;
   export os-resume: func(session-id: string) -> s32;
+
   export os-process-input: func(event: system-types::ui-event);
   export os-get-render-tree: func() -> list<system-types::window-node>;
+
+  export os-load-component: func(kind: u32, source-path: string) -> s32;
+  export os-list-apps: func() -> list<system-types::app-descriptor>;
+
+  export os-get-terminal-grid: func() -> system-types::terminal-grid;
+  export os-get-metrics: func() -> system-types::system-metrics;
 }

@@ -29,6 +29,20 @@ const EVENT_MOD_OFFSET = 12;
 const EVENT_TIME_LOW_OFFSET = 16;
 const EVENT_TIME_HIGH_OFFSET = 20;
 
+const WINDOW_EVT_POINTER_DOWN = 64;
+const WINDOW_EVT_POINTER_MOVE = 65;
+const WINDOW_EVT_POINTER_UP = 66;
+const WINDOW_EVT_WHEEL = 67;
+const WINDOW_EVT_CLOSE = 68;
+const WINDOW_EVT_TOGGLE_MAXIMIZE = 69;
+const WINDOW_EVT_MINIMIZE = 70;
+
+const WINDOW_FLAG_FOCUSED = 1 << 0;
+const WINDOW_FLAG_HIDDEN = 1 << 1;
+const WINDOW_FLAG_MAXIMIZED = 1 << 2;
+
+const HEADER_DRAG_HEIGHT_PX = 32;
+
 const WINDOW_ID_OFFSET = 0;
 const WINDOW_X_OFFSET = 4;
 const WINDOW_Y_OFFSET = 8;
@@ -85,6 +99,16 @@ type SpringWindowState = {
   vdepth: number;
 };
 
+type LiveWindowBounds = {
+  id: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  zOrder: number;
+  flags: number;
+};
+
 type SpatialMetrics = {
   fps: number;
   backlog: number;
@@ -122,28 +146,16 @@ function pointerModifiers(event: MouseEvent | PointerEvent | WheelEvent | TouchE
   return flags;
 }
 
-function keyboardModifiers(event: KeyboardEvent): number {
-  let flags = 0;
-  if (event.shiftKey) {
-    flags |= 1 << 0;
-  }
-  if (event.altKey) {
-    flags |= 1 << 1;
-  }
-  if (event.ctrlKey) {
-    flags |= 1 << 2;
-  }
-  if (event.metaKey) {
-    flags |= 1 << 3;
-  }
-  return flags;
-}
-
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
-function integrateSpring(value: number, velocity: number, target: number, dt: number): [number, number] {
+export function integrateSpring(
+  value: number,
+  velocity: number,
+  target: number,
+  dt: number,
+): [number, number] {
   const stiffness = 220;
   const damping = 30;
   const displacement = value - target;
@@ -181,10 +193,21 @@ export default function SpatialDisplay({
   const inputDataRef = useRef<DataView | null>(null);
   const renderHeaderRef = useRef<Int32Array | null>(null);
   const renderDataRef = useRef<DataView | null>(null);
+  const pushInputEventRef = useRef<((
+    eventType: number,
+    paramA: number,
+    paramB: number,
+    modifierFlags: number,
+  ) => boolean) | null>(null);
 
   const lastRenderSequenceRef = useRef<number>(-1);
   const targetNodesRef = useRef<WindowNode[]>([]);
   const springStateRef = useRef<Map<number, SpringWindowState>>(new Map());
+  const liveWindowsRef = useRef<LiveWindowBounds[]>([]);
+
+  const dragAtomicRef = useRef<Int32Array>(new Int32Array(new SharedArrayBuffer(4)));
+  const dragPointerIdRef = useRef<number | null>(null);
+  const dragWindowIdRef = useRef<number>(0);
 
   const rafIdRef = useRef<number | null>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
@@ -399,6 +422,17 @@ export default function SpatialDisplay({
       }
 
       const sortedStates = Array.from(states.values()).sort((a, b) => a.zOrder - b.zOrder);
+      liveWindowsRef.current = sortedStates
+        .filter((state) => (state.flags & WINDOW_FLAG_HIDDEN) === 0)
+        .map((state) => ({
+          id: state.id,
+          x: state.x,
+          y: state.y,
+          width: Math.max(120, state.w),
+          height: Math.max(90, state.h),
+          zOrder: state.zOrder,
+          flags: state.flags,
+        }));
 
       for (let i = 0; i < MAX_WINDOWS; i += 1) {
         const element = windowRefs.current[i];
@@ -412,21 +446,31 @@ export default function SpatialDisplay({
         if (!state) {
           element.style.opacity = "0";
           element.style.pointerEvents = "none";
+          element.dataset.windowId = "";
+          continue;
+        }
+
+        if ((state.flags & WINDOW_FLAG_HIDDEN) !== 0) {
+          element.style.opacity = "0";
+          element.style.pointerEvents = "none";
+          element.dataset.windowId = `${state.id}`;
           continue;
         }
 
         const nx = clamp(state.x / virtualWidth, 0, 1);
         const ny = clamp(state.y / virtualHeight, 0, 1);
         const shineAngle = 25 + nx * 130 - ny * 32;
-        const glowStrength = (state.flags & 1) !== 0 ? 0.72 : 0.34;
+        const glowStrength = (state.flags & WINDOW_FLAG_FOCUSED) !== 0 ? 0.72 : 0.34;
         const edgeAlpha = 0.22 + glowStrength * 0.55;
         const shadowAlpha = 0.2 + glowStrength * 0.35;
 
         element.style.opacity = state.opacity.toFixed(3);
+        element.style.pointerEvents = "auto";
         element.style.width = `${Math.max(120, state.w)}px`;
         element.style.height = `${Math.max(90, state.h)}px`;
         element.style.transform = `translate3d(${state.x.toFixed(2)}px, ${state.y.toFixed(2)}px, ${state.depth.toFixed(2)}px)`;
         element.style.zIndex = `${40 + state.zOrder}`;
+        element.dataset.windowId = `${state.id}`;
         element.style.setProperty("--shine-angle", `${shineAngle.toFixed(1)}deg`);
         element.style.setProperty("--edge-alpha", edgeAlpha.toFixed(3));
         element.style.setProperty("--window-alpha", state.alpha.toFixed(3));
@@ -435,7 +479,8 @@ export default function SpatialDisplay({
           32 + state.depth * 1.1
         ).toFixed(2)}px rgba(5, 11, 22, ${shadowAlpha.toFixed(3)})`;
 
-        title.textContent = `Window ${state.id}`;
+        const isMax = (state.flags & WINDOW_FLAG_MAXIMIZED) !== 0;
+        title.textContent = `Window ${state.id}${isMax ? " (MAX)" : ""}`;
         metric.textContent = `${Math.round(state.w)}x${Math.round(state.h)} • z${state.zOrder}`;
       }
 
@@ -518,6 +563,7 @@ export default function SpatialDisplay({
       Atomics.store(inputHeader, INPUT_WRITE_INDEX, (write + 1) | 0);
       return true;
     };
+    pushInputEventRef.current = pushInputEvent;
 
     const mapToVirtual = (clientX: number, clientY: number): [number, number] => {
       const rect = shell.getBoundingClientRect();
@@ -526,51 +572,139 @@ export default function SpatialDisplay({
       return [clamp(x, 0, virtualWidth), clamp(y, 0, virtualHeight)];
     };
 
-    const handlePointer = (event: PointerEvent) => {
+    const topWindowAt = (x: number, y: number): LiveWindowBounds | null => {
+      const windows = liveWindowsRef.current;
+      for (let index = windows.length - 1; index >= 0; index -= 1) {
+        const windowNode = windows[index];
+        if (
+          x >= windowNode.x
+          && y >= windowNode.y
+          && x <= windowNode.x + windowNode.width
+          && y <= windowNode.y + windowNode.height
+        ) {
+          return windowNode;
+        }
+      }
+
+      return null;
+    };
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest(".glass-window-control")) {
+        return;
+      }
+
       const [x, y] = mapToVirtual(event.clientX, event.clientY);
-      pushInputEvent(0, x, y, pointerModifiers(event));
-      if (event.type === "pointerdown") {
-        shell.focus();
+      const hostWindow = target?.closest(".glass-window") as HTMLElement | null;
+      const hintedId = Number(hostWindow?.dataset.windowId ?? 0);
+      const hit = hintedId > 0
+        ? liveWindowsRef.current.find((windowNode) => windowNode.id === hintedId) ?? null
+        : topWindowAt(x, y);
+
+      if (!hit) {
+        return;
+      }
+
+      const modifiers = pointerModifiers(event) | ((hit.id & 0xffff) << 16);
+      pushInputEvent(WINDOW_EVT_POINTER_DOWN, x, y, modifiers);
+      shell.focus();
+
+      const localY = y - hit.y;
+      const localX = x - hit.x;
+      const inHeader =
+        localY >= 0
+        && localY <= HEADER_DRAG_HEIGHT_PX
+        && localX >= 0
+        && localX <= hit.width;
+
+      if (!inHeader) {
+        Atomics.store(dragAtomicRef.current, 0, 0);
+        dragPointerIdRef.current = null;
+        dragWindowIdRef.current = 0;
+        return;
+      }
+
+      Atomics.store(dragAtomicRef.current, 0, 1);
+      dragPointerIdRef.current = event.pointerId;
+      dragWindowIdRef.current = hit.id;
+      shell.setPointerCapture(event.pointerId);
+    };
+
+    const handlePointerMove = (event: PointerEvent) => {
+      if (Atomics.load(dragAtomicRef.current, 0) !== 1) {
+        return;
+      }
+
+      if (dragPointerIdRef.current !== null && event.pointerId !== dragPointerIdRef.current) {
+        return;
+      }
+
+      const [x, y] = mapToVirtual(event.clientX, event.clientY);
+      const windowId = dragWindowIdRef.current;
+      const modifiers = pointerModifiers(event) | ((windowId & 0xffff) << 16);
+      pushInputEvent(WINDOW_EVT_POINTER_MOVE, x, y, modifiers);
+    };
+
+    const handlePointerUp = (event: PointerEvent) => {
+      if (Atomics.load(dragAtomicRef.current, 0) !== 1) {
+        return;
+      }
+
+      if (dragPointerIdRef.current !== null && event.pointerId !== dragPointerIdRef.current) {
+        return;
+      }
+
+      const [x, y] = mapToVirtual(event.clientX, event.clientY);
+      const windowId = dragWindowIdRef.current;
+      const modifiers = pointerModifiers(event) | ((windowId & 0xffff) << 16);
+      pushInputEvent(WINDOW_EVT_POINTER_UP, x, y, modifiers);
+
+      Atomics.store(dragAtomicRef.current, 0, 0);
+      dragPointerIdRef.current = null;
+      dragWindowIdRef.current = 0;
+
+      if (shell.hasPointerCapture(event.pointerId)) {
+        shell.releasePointerCapture(event.pointerId);
       }
     };
 
     const handleWheel = (event: WheelEvent) => {
-      pushInputEvent(2, event.deltaX, event.deltaY, pointerModifiers(event));
+      pushInputEvent(WINDOW_EVT_WHEEL, event.deltaX, event.deltaY, pointerModifiers(event));
     };
 
-    const handleTouch = (event: TouchEvent) => {
-      const touch = event.touches[0] ?? event.changedTouches[0];
-      if (!touch) {
-        return;
-      }
-
-      const [x, y] = mapToVirtual(touch.clientX, touch.clientY);
-      pushInputEvent(2, x, y, pointerModifiers(event));
-    };
-
-    const handleKey = (event: KeyboardEvent) => {
-      const keyCode = event.key.length === 1 ? event.key.charCodeAt(0) : event.keyCode;
-      pushInputEvent(1, keyCode, event.repeat ? 1 : 0, keyboardModifiers(event));
-    };
-
-    shell.addEventListener("pointerdown", handlePointer, { passive: true });
-    shell.addEventListener("pointermove", handlePointer, { passive: true });
-    shell.addEventListener("pointerup", handlePointer, { passive: true });
+    shell.addEventListener("pointerdown", handlePointerDown, { passive: true, capture: true });
+    shell.addEventListener("pointermove", handlePointerMove, { passive: true, capture: true });
+    shell.addEventListener("pointerup", handlePointerUp, { passive: true, capture: true });
+    shell.addEventListener("pointercancel", handlePointerUp, { passive: true, capture: true });
     shell.addEventListener("wheel", handleWheel, { passive: true });
-    shell.addEventListener("touchstart", handleTouch, { passive: true });
-    shell.addEventListener("touchmove", handleTouch, { passive: true });
-    window.addEventListener("keydown", handleKey);
 
     return () => {
-      shell.removeEventListener("pointerdown", handlePointer);
-      shell.removeEventListener("pointermove", handlePointer);
-      shell.removeEventListener("pointerup", handlePointer);
+      pushInputEventRef.current = null;
+      Atomics.store(dragAtomicRef.current, 0, 0);
+      dragPointerIdRef.current = null;
+      dragWindowIdRef.current = 0;
+
+      shell.removeEventListener("pointerdown", handlePointerDown, true);
+      shell.removeEventListener("pointermove", handlePointerMove, true);
+      shell.removeEventListener("pointerup", handlePointerUp, true);
+      shell.removeEventListener("pointercancel", handlePointerUp, true);
       shell.removeEventListener("wheel", handleWheel);
-      shell.removeEventListener("touchstart", handleTouch);
-      shell.removeEventListener("touchmove", handleTouch);
-      window.removeEventListener("keydown", handleKey);
     };
   }, [virtualHeight, virtualWidth]);
+
+  const sendWindowCommand = (eventType: number, windowId: number): void => {
+    if (windowId <= 0) {
+      return;
+    }
+
+    const push = pushInputEventRef.current;
+    if (!push) {
+      return;
+    }
+
+    push(eventType, windowId, 0, (windowId & 0xffff) << 16);
+  };
 
   return (
     <section className="display-shell" ref={shellRef} tabIndex={0} aria-label="Spatial desktop viewport">
@@ -592,13 +726,74 @@ export default function SpatialDisplay({
               >
                 Window
               </span>
-              <i
-                ref={(node) => {
-                  metricRefs.current[index] = node;
-                }}
-              >
-                0x0
-              </i>
+              <div className="glass-window-meta">
+                <i
+                  ref={(node) => {
+                    metricRefs.current[index] = node;
+                  }}
+                >
+                  0x0
+                </i>
+                <div className="glass-window-controls">
+                  <button
+                    type="button"
+                    className="glass-window-control min"
+                    aria-label="Minimize window"
+                    title="Minimize"
+                    onPointerDown={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                    }}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      const host = event.currentTarget.closest(".glass-window") as HTMLElement | null;
+                      const windowId = Number(host?.dataset.windowId ?? 0);
+                      sendWindowCommand(WINDOW_EVT_MINIMIZE, windowId);
+                    }}
+                  >
+                    -
+                  </button>
+                  <button
+                    type="button"
+                    className="glass-window-control max"
+                    aria-label="Maximize or restore window"
+                    title="Maximize or restore"
+                    onPointerDown={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                    }}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      const host = event.currentTarget.closest(".glass-window") as HTMLElement | null;
+                      const windowId = Number(host?.dataset.windowId ?? 0);
+                      sendWindowCommand(WINDOW_EVT_TOGGLE_MAXIMIZE, windowId);
+                    }}
+                  >
+                    ▢
+                  </button>
+                  <button
+                    type="button"
+                    className="glass-window-control close"
+                    aria-label="Close window"
+                    title="Close"
+                    onPointerDown={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                    }}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      const host = event.currentTarget.closest(".glass-window") as HTMLElement | null;
+                      const windowId = Number(host?.dataset.windowId ?? 0);
+                      sendWindowCommand(WINDOW_EVT_CLOSE, windowId);
+                    }}
+                  >
+                    X
+                  </button>
+                </div>
+              </div>
             </header>
             <div className="glass-window-body" />
           </article>

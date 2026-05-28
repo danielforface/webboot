@@ -64,6 +64,14 @@ impl DeltaTrackedVfs {
     Ok(fd)
   }
 
+  pub fn close(&mut self, fd: u32) -> Result<(), i32> {
+    if self.handles.remove(&fd).is_some() {
+      Ok(())
+    } else {
+      Err(ENOENT)
+    }
+  }
+
   pub fn track_write(&mut self, fd: u32, byte_offset: u64, len: u32) -> Result<(), i32> {
     if len == 0 {
       return Ok(());
@@ -116,6 +124,10 @@ impl DeltaTrackedVfs {
       .values()
       .map(|state| state.dirty_blocks.len())
       .sum()
+  }
+
+  pub fn handle_count(&self) -> usize {
+    self.handles.len()
   }
 }
 

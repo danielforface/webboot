@@ -1,0 +1,156 @@
+package everywhere:hardware-hal@0.1.0;
+
+interface sys-activity {
+  record intent-payload {
+    ptr: u32,
+    len: u32,
+  }
+
+  record launch-result {
+    app-id: u32,
+    task-id: u32,
+    arena-base: u32,
+    arena-length: u32,
+  }
+
+  activity-launch: func(app-uri: string, launch-flags: u32) -> result<launch-result, s32>;
+  activity-terminate: func(app-id: u32, exit-code: s32) -> result<_, s32>;
+  activity-send-intent: func(target-app-id: u32, action-code: u32, payload: intent-payload) -> s32;
+}
+
+interface sys-window {
+  record window-create-result {
+    window-id: u32,
+    layout-flags: u32,
+  }
+
+  record visual-state {
+    opacity: f32,
+    blur-radius: u32,
+    depth-z: u32,
+  }
+
+  window-create: func(app-id: u32, layout-flags: u32) -> result<window-create-result, s32>;
+  window-attach-buffer: func(window-id: u32, buffer-ptr: u32, buffer-len: u32) -> result<_, s32>;
+  window-set-visuals: func(window-id: u32, visuals: visual-state) -> result<_, s32>;
+}
+
+interface sys-fs {
+  record fs-open-result {
+    fd: u32,
+    mode-flags: u32,
+  }
+
+  fs-open: func(path: string, mode-flags: u32) -> result<fs-open-result, s32>;
+  fs-read-async: func(fd: u32, offset: u64, dest-ptr: u32, len: u32) -> s32;
+  fs-write-async: func(fd: u32, offset: u64, src-ptr: u32, len: u32) -> s32;
+}
+
+interface sys-media {
+  record stream-open-result {
+    stream-id: u32,
+    stream-type: u32,
+    rate: u32,
+    channels: u32,
+  }
+
+  media-stream-open: func(stream-type: u32, rate: u32, channels: u32) -> result<stream-open-result, s32>;
+  media-push-pcm: func(stream-id: u32, buffer-ptr: u32, sample-count: u32) -> s32;
+  media-capture-frame: func(window-id: u32) -> result<u32, s32>;
+}
+
+interface android-types {
+  record apk-manifest {
+    package-name: string,
+    main-activity: string,
+    min-sdk: u32,
+  }
+
+  record dalvik-intent {
+    action: string,
+    categories: list<string>,
+    data-uri: string,
+    comp-package: string,
+    comp-class: string,
+  }
+}
+
+interface hal-types {
+  record sensor-vec3 {
+    x: f32,
+    y: f32,
+    z: f32,
+    timestamp-ns: u64,
+  }
+
+  record gps-coords {
+    latitude: f64,
+    longitude: f64,
+    altitude: f64,
+    accuracy: f32,
+    heading: f32,
+    speed: f32,
+  }
+
+  record audio-packet-header {
+    channels: u32,
+    sample-rate: u32,
+    buffer-ptr: u32,
+    buffer-len: u32,
+  }
+}
+
+interface hal-ultimate-types {
+  record nfc-record {
+    record-type: string,
+    media-type: string,
+    payload: list<u8>,
+  }
+
+  record gamepad-packet {
+    index: u32,
+    buttons-bitmap: u64,
+    axes-vectors: list<f32>,
+  }
+
+  record xr-pose-matrix {
+    transform-m11-m44: list<f32>,
+    hand-tracking-left-right: list<f32>,
+  }
+}
+
+world nomadic-core {
+  import host-sync-fragment: func(fragment-bytes: list<u8>) -> s32;
+  import host-log: func(msg: string);
+
+  export sys-activity;
+  export sys-window;
+  export sys-fs;
+  export sys-media;
+}
+
+world android-core {
+  import host-log: func(msg: string);
+
+  export android-deploy-apk: func(vfs-path: string) -> s32;
+  export android-start-activity: func(intent: android-types::dalvik-intent) -> s32;
+  export android-vm-tick: func(app-id: u32) -> s32;
+}
+
+world hardware-core {
+  import host-request-hardware: func(device-type: u32) -> s32;
+
+  export hal-inject-sensor: func(sensor-id: u32, data: hal-types::sensor-vec3) -> s32;
+  export hal-inject-location: func(coords: hal-types::gps-coords) -> s32;
+  export hal-inject-audio-frame: func(header: hal-types::audio-packet-header) -> s32;
+}
+
+world hardware-core-ultimate {
+  import host-trigger-haptics: func(pattern-ms: list<u32>) -> s32;
+  import host-serial-write: func(port-id: u32, data: list<u8>) -> s32;
+
+  export hal-inject-nfc: func(payload: hal-ultimate-types::nfc-record) -> s32;
+  export hal-inject-gamepad: func(packet: hal-ultimate-types::gamepad-packet) -> s32;
+  export hal-inject-xr: func(pose: hal-ultimate-types::xr-pose-matrix) -> s32;
+  export hal-inject-serial-read: func(port-id: u32, data: list<u8>) -> s32;
+}

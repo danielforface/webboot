@@ -95,12 +95,121 @@ impl DirtyPageBitmap {
 
     count
   }
+
+  pub fn count_dirty_pages(&self) -> u32 {
+    let mut total = 0_u32;
+    for cell in &self.bits {
+      total = total.saturating_add(cell.load(Ordering::Acquire).count_ones());
+    }
+
+    total
+  }
 }
 
 pub struct LinearMemoryImage {
   total_bytes: u32,
   page_count: u32,
   pages: BTreeMap<u32, Box<[u8; PAGE_SIZE]>>,
+}
+
+#[derive(Clone, Copy, Debug, Default)]
+pub struct ArenaSlice {
+  pub base_page: u32,
+  pub page_count: u32,
+}
+
+pub struct PageArenaAllocator {
+  cursor: u32,
+  total_pages: u32,
+  free_list: Vec<ArenaSlice>,
+}
+
+impl PageArenaAllocator {
+  pub fn new(total_pages: u32, reserved_pages: u32) -> Self {
+    let cursor = reserved_pages.min(total_pages);
+    Self {
+      cursor,
+      total_pages,
+      free_list: Vec::new(),
+    }
+  }
+
+  pub fn allocate_pages(&mut self, requested_pages: u32) -> Option<ArenaSlice> {
+    if requested_pages == 0 {
+      return None;
+    }
+
+    if let Some(index) = self
+      .free_list
+      .iter()
+      .position(|entry| entry.page_count >= requested_pages)
+    {
+      let mut entry = self.free_list[index];
+      if entry.page_count == requested_pages {
+        self.free_list.swap_remove(index);
+        return Some(entry);
+      }
+
+      entry.page_count -= requested_pages;
+      self.free_list[index].page_count = entry.page_count;
+      self.free_list[index].base_page = self.free_list[index]
+        .base_page
+        .saturating_add(requested_pages);
+      return Some(ArenaSlice {
+        base_page: entry.base_page,
+        page_count: requested_pages,
+      });
+    }
+
+    if self.cursor.saturating_add(requested_pages) > self.total_pages {
+      return None;
+    }
+
+    let slice = ArenaSlice {
+      base_page: self.cursor,
+      page_count: requested_pages,
+    };
+    self.cursor = self.cursor.saturating_add(requested_pages);
+    Some(slice)
+  }
+
+  pub fn release(&mut self, slice: ArenaSlice) {
+    if slice.page_count == 0 || slice.base_page >= self.total_pages {
+      return;
+    }
+
+    let max_count = self.total_pages.saturating_sub(slice.base_page);
+    let clamped = ArenaSlice {
+      base_page: slice.base_page,
+      page_count: slice.page_count.min(max_count),
+    };
+
+    self.free_list.push(clamped);
+    self.coalesce();
+  }
+
+  fn coalesce(&mut self) {
+    self
+      .free_list
+      .sort_by(|left, right| left.base_page.cmp(&right.base_page));
+
+    let mut merged: Vec<ArenaSlice> = Vec::with_capacity(self.free_list.len());
+    for entry in &self.free_list {
+      if let Some(last) = merged.last_mut() {
+        let end = last.base_page.saturating_add(last.page_count);
+        if end >= entry.base_page {
+          let next_end = entry.base_page.saturating_add(entry.page_count);
+          let merged_end = end.max(next_end);
+          last.page_count = merged_end.saturating_sub(last.base_page);
+          continue;
+        }
+      }
+
+      merged.push(*entry);
+    }
+
+    self.free_list = merged;
+  }
 }
 
 impl LinearMemoryImage {
@@ -224,4 +333,75 @@ pub unsafe fn read_utf8_from_ptr(ptr: *const u8, len: usize) -> Result<String, i
     Ok(value) => Ok(value.to_owned()),
     Err(_) => Err(EILSEQ),
   }
+}
+
+pub fn rle_zero_encode(input: &[u8], output: &mut [u8]) -> Result<usize, i32> {
+  let mut i = 0;
+  let mut o = 0;
+
+  while i < input.len() {
+    if input[i] == 0 {
+      let mut run = 1;
+      while i + run < input.len() && run < 128 && input[i + run] == 0 {
+        run += 1;
+      }
+
+      if o >= output.len() {
+        return Err(EOVERFLOW);
+      }
+
+      output[o] = 0x80 | ((run - 1) as u8);
+      o += 1;
+      i += run;
+      continue;
+    }
+
+    let mut run = 1;
+    while i + run < input.len() && run < 128 && input[i + run] != 0 {
+      run += 1;
+    }
+
+    if o + 1 + run > output.len() {
+      return Err(EOVERFLOW);
+    }
+
+    output[o] = (run - 1) as u8;
+    o += 1;
+    output[o..o + run].copy_from_slice(&input[i..i + run]);
+    o += run;
+    i += run;
+  }
+
+  Ok(o)
+}
+
+pub fn rle_zero_decode(input: &[u8], output: &mut [u8]) -> Result<usize, i32> {
+  let mut i = 0;
+  let mut o = 0;
+
+  while i < input.len() {
+    let token = input[i];
+    i += 1;
+
+    let run = ((token & 0x7f) as usize) + 1;
+    if token & 0x80 != 0 {
+      if o + run > output.len() {
+        return Err(EOVERFLOW);
+      }
+
+      output[o..o + run].fill(0);
+      o += run;
+      continue;
+    }
+
+    if i + run > input.len() || o + run > output.len() {
+      return Err(EOVERFLOW);
+    }
+
+    output[o..o + run].copy_from_slice(&input[i..i + run]);
+    i += run;
+    o += run;
+  }
+
+  Ok(o)
 }

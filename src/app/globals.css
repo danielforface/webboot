@@ -96,6 +96,521 @@ h1 {
   align-items: stretch;
 }
 
+.workspace-grid.fullscreen {
+  grid-template-columns: 1fr;
+}
+
+.workspace-display {
+  position: relative;
+}
+
+.workspace-display-controls {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.7rem;
+  z-index: 25;
+  pointer-events: none;
+}
+
+.workspace-display-controls button {
+  pointer-events: auto;
+  border: 1px solid rgba(162, 223, 255, 0.44);
+  border-radius: 0.6rem;
+  background: linear-gradient(180deg, rgba(24, 44, 67, 0.9), rgba(10, 19, 30, 0.88));
+  color: var(--ink-0);
+  font: 600 0.72rem/1.1 "IBM Plex Sans", "Segoe UI", sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.48rem 0.62rem;
+  cursor: pointer;
+}
+
+.workspace-display.fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 52;
+  padding: 0.7rem;
+  background:
+    radial-gradient(110% 120% at 18% -14%, rgba(60, 119, 165, 0.42), rgba(60, 119, 165, 0) 58%),
+    linear-gradient(150deg, rgba(2, 9, 18, 0.96), rgba(5, 14, 24, 0.96));
+}
+
+.workspace-display.fullscreen .workspace-display-controls {
+  top: 1rem;
+  right: 1rem;
+}
+
+.workspace-display.fullscreen .display-shell {
+  min-height: calc(100vh - 1.4rem);
+  height: calc(100vh - 1.4rem);
+}
+
+.workspace-sidebar {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: var(--grid-unit);
+}
+
+.sys-app-bar {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.88rem 0.95rem;
+  border-radius: var(--radius-card);
+  border: 1px solid rgba(111, 204, 255, 0.38);
+  background:
+    linear-gradient(115deg, rgba(20, 39, 58, 0.68), rgba(6, 14, 24, 0.8)),
+    radial-gradient(120% 180% at 0% 0%, rgba(119, 205, 255, 0.24), rgba(119, 205, 255, 0));
+  backdrop-filter: blur(16px) saturate(120%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.sys-app-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.sys-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.22rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid rgba(160, 219, 255, 0.4);
+  background: rgba(11, 20, 33, 0.54);
+  font: 600 0.72rem/1.1 "IBM Plex Sans", "Segoe UI", sans-serif;
+  letter-spacing: 0.05em;
+}
+
+.sys-app-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7.2rem, 1fr));
+  gap: 0.5rem;
+}
+
+.sys-app-actions button,
+.settings-actions button,
+.sys-launcher header button,
+.sys-launcher-card {
+  border: 1px solid rgba(148, 213, 255, 0.36);
+  border-radius: 0.65rem;
+  background: linear-gradient(180deg, rgba(20, 40, 62, 0.85), rgba(9, 18, 29, 0.85));
+  color: var(--ink-0);
+  font: 600 0.74rem/1.2 "IBM Plex Sans", "Segoe UI", sans-serif;
+  letter-spacing: 0.04em;
+  padding: 0.52rem 0.58rem;
+  cursor: pointer;
+  transition: transform 120ms ease, border-color 120ms ease;
+}
+
+.sys-app-actions button:hover,
+.settings-actions button:hover,
+.sys-launcher header button:hover,
+.sys-launcher-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(188, 231, 255, 0.62);
+}
+
+.sys-app-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--grid-unit);
+}
+
+.sys-card {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 0.7rem;
+  padding: 0.95rem;
+  min-height: 16rem;
+  border-radius: var(--radius-card);
+  border: 1px solid rgba(148, 214, 255, 0.34);
+  background: linear-gradient(180deg, rgba(9, 20, 33, 0.86), rgba(4, 10, 18, 0.78));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 14px 36px rgba(4, 10, 18, 0.36);
+}
+
+.sys-card header h2 {
+  margin: 0;
+  font-size: 0.95rem;
+  letter-spacing: 0.05em;
+}
+
+.sys-card header p {
+  margin: 0.26rem 0 0;
+  color: var(--ink-2);
+  font-size: 0.75rem;
+}
+
+.sys-card pre {
+  margin: 0;
+  border-radius: var(--radius-panel);
+  border: 1px solid rgba(147, 213, 255, 0.23);
+  background: rgba(2, 7, 13, 0.76);
+  padding: 0.75rem;
+  color: #d4f4e3;
+  font: 500 0.78rem/1.35 "IBM Plex Mono", "Cascadia Mono", monospace;
+  white-space: pre-wrap;
+  overflow: auto;
+}
+
+.photo-canvas {
+  width: 100%;
+  min-height: 12rem;
+  border-radius: var(--radius-panel);
+  border: 1px solid rgba(147, 213, 255, 0.24);
+  background: rgba(6, 13, 22, 0.84);
+  touch-action: none;
+}
+
+.media-actions,
+.files-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+
+.files-list {
+  display: grid;
+  gap: 0.36rem;
+  max-height: 15rem;
+  overflow: auto;
+  align-content: start;
+}
+
+.files-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(147, 213, 255, 0.22);
+  background: rgba(7, 15, 24, 0.7);
+  padding: 0.42rem 0.5rem;
+  font: 500 0.7rem/1.25 "IBM Plex Mono", "Cascadia Mono", monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: default;
+}
+
+.files-row:hover {
+  border-color: rgba(188, 231, 255, 0.52);
+}
+
+.files-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.files-apk-launch {
+  flex: 0 0 auto;
+  border-radius: 0.46rem;
+  border: 1px solid rgba(255, 189, 115, 0.4);
+  background: linear-gradient(180deg, rgba(80, 47, 14, 0.92), rgba(43, 23, 6, 0.92));
+  color: #ffe7c1;
+  font: 600 0.64rem/1.1 "IBM Plex Sans", "Segoe UI", sans-serif;
+  letter-spacing: 0.04em;
+  padding: 0.31rem 0.48rem;
+  cursor: pointer;
+  transition: transform 120ms ease, border-color 120ms ease;
+}
+
+.files-apk-launch:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 216, 165, 0.62);
+}
+
+.files-row.synced {
+  border-color: rgba(112, 214, 182, 0.4);
+  color: #b8f0d9;
+}
+
+.files-row.dirty {
+  border-color: rgba(255, 190, 116, 0.4);
+  color: #ffe2b5;
+}
+
+.files-row.queued {
+  border-color: rgba(147, 213, 255, 0.26);
+  color: #cee8fc;
+}
+
+.files-list .empty {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 0.78rem;
+}
+
+.apk-installer {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 0.68rem;
+  min-height: 16rem;
+  padding: 0.95rem;
+  border-radius: var(--radius-card);
+  border: 1px solid rgba(255, 198, 125, 0.36);
+  background:
+    radial-gradient(130% 150% at 0% 0%, rgba(255, 184, 90, 0.16), rgba(255, 184, 90, 0)),
+    linear-gradient(180deg, rgba(24, 14, 6, 0.9), rgba(13, 8, 4, 0.86));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 238, 210, 0.14),
+    0 14px 36px rgba(12, 7, 3, 0.38);
+}
+
+.apk-installer header h2 {
+  margin: 0;
+  font-size: 0.95rem;
+  letter-spacing: 0.05em;
+}
+
+.apk-installer header p {
+  margin: 0.26rem 0 0;
+  color: #ffd9b1;
+  font-size: 0.75rem;
+}
+
+.apk-drop-zone {
+  display: grid;
+  place-items: center;
+  gap: 0.7rem;
+  border-radius: 0.82rem;
+  border: 1px dashed rgba(255, 207, 148, 0.55);
+  background:
+    linear-gradient(180deg, rgba(35, 20, 7, 0.74), rgba(19, 12, 6, 0.74)),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(255, 187, 103, 0.08) 0,
+      rgba(255, 187, 103, 0.08) 8px,
+      rgba(255, 187, 103, 0.02) 8px,
+      rgba(255, 187, 103, 0.02) 16px
+    );
+  padding: 0.9rem;
+  transition: transform 140ms ease, border-color 140ms ease;
+}
+
+.apk-drop-zone.dragging {
+  transform: translateY(-2px) scale(1.01);
+  border-color: rgba(255, 227, 177, 0.88);
+}
+
+.apk-drop-zone p {
+  margin: 0;
+  color: #ffddb6;
+  font: 600 0.78rem/1.3 "IBM Plex Mono", "Cascadia Mono", monospace;
+}
+
+.apk-drop-zone button {
+  border: 1px solid rgba(255, 216, 164, 0.46);
+  border-radius: 0.6rem;
+  background: linear-gradient(180deg, rgba(106, 63, 20, 0.88), rgba(66, 37, 11, 0.9));
+  color: #fff0d7;
+  font: 600 0.74rem/1.2 "IBM Plex Sans", "Segoe UI", sans-serif;
+  letter-spacing: 0.04em;
+  padding: 0.48rem 0.62rem;
+  cursor: pointer;
+}
+
+.apk-status {
+  margin: 0;
+  min-height: 1.2rem;
+  color: #ffd1a3;
+  font: 500 0.73rem/1.35 "IBM Plex Mono", "Cascadia Mono", monospace;
+}
+
+.sys-card label {
+  display: grid;
+  gap: 0.36rem;
+}
+
+.sys-card label span {
+  color: var(--ink-2);
+  font: 600 0.72rem/1 "IBM Plex Sans", "Segoe UI", sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sys-card input {
+  border-radius: 0.6rem;
+  border: 1px solid rgba(147, 213, 255, 0.28);
+  background: rgba(4, 11, 18, 0.92);
+  color: var(--ink-0);
+  font: 500 0.82rem/1.25 "IBM Plex Mono", "Cascadia Mono", monospace;
+  padding: 0.56rem 0.64rem;
+}
+
+.settings-app {
+  min-height: 17.5rem;
+}
+
+.settings-app dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.settings-app dl div {
+  padding: 0.52rem 0.6rem;
+  border-radius: 0.62rem;
+  border: 1px solid rgba(149, 213, 255, 0.22);
+  background: rgba(4, 11, 18, 0.58);
+}
+
+.settings-app dt {
+  margin: 0;
+  font-size: 0.67rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.settings-app dd {
+  margin: 0.2rem 0 0;
+  color: var(--ink-0);
+  font: 500 0.78rem/1.3 "IBM Plex Mono", "Cascadia Mono", monospace;
+}
+
+.settings-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.settings-charts {
+  display: grid;
+  gap: 0.44rem;
+}
+
+.settings-bar {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.32rem 0.55rem;
+  align-items: center;
+  padding: 0.45rem 0.55rem 0.6rem;
+  border-radius: 0.62rem;
+  border: 1px solid rgba(149, 213, 255, 0.22);
+  background: rgba(4, 11, 18, 0.58);
+}
+
+.settings-bar span,
+.settings-bar b {
+  font: 600 0.72rem/1.1 "IBM Plex Sans", "Segoe UI", sans-serif;
+  letter-spacing: 0.05em;
+}
+
+.settings-bar b {
+  color: var(--accent-cyan);
+}
+
+.settings-bar i {
+  grid-column: 1 / -1;
+  display: block;
+  height: 0.36rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(102, 210, 255, 0.82), rgba(255, 206, 128, 0.78));
+}
+
+.settings-log {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.5rem 0.58rem;
+  border-radius: 0.62rem;
+  border: 1px solid rgba(149, 213, 255, 0.18);
+  background: rgba(4, 11, 18, 0.48);
+}
+
+.settings-log p {
+  margin: 0;
+  font: 500 0.7rem/1.35 "IBM Plex Mono", "Cascadia Mono", monospace;
+  color: #b9d8f2;
+}
+
+.sys-launcher-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(2, 8, 14, 0.58);
+  backdrop-filter: blur(8px);
+}
+
+.sys-launcher {
+  width: min(52rem, 100%);
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(157, 218, 255, 0.46);
+  background: linear-gradient(180deg, rgba(7, 16, 25, 0.96), rgba(4, 10, 17, 0.94));
+}
+
+.sys-launcher header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sys-launcher header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.sys-launcher-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.58rem;
+}
+
+.sys-launcher-card {
+  display: grid;
+  gap: 0.28rem;
+  align-content: start;
+  text-align: left;
+  min-height: 5.4rem;
+}
+
+.sys-launcher-card strong {
+  font-size: 0.86rem;
+}
+
+.sys-launcher-card span {
+  font-size: 0.72rem;
+  color: var(--ink-1);
+}
+
+.sys-running-list h3 {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.sys-running-list p {
+  margin: 0.5rem 0 0;
+  color: var(--ink-2);
+  font-size: 0.8rem;
+}
+
+.sys-running-list ul {
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.34rem;
+}
+
+.sys-running-list li {
+  display: grid;
+  grid-template-columns: 1.3fr 0.7fr 1fr 0.8fr;
+  gap: 0.45rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 0.6rem;
+  border: 1px solid rgba(149, 214, 255, 0.24);
+  background: rgba(8, 18, 28, 0.64);
+  font: 500 0.72rem/1.25 "IBM Plex Mono", "Cascadia Mono", monospace;
+}
+
 .display-shell {
   position: relative;
   isolation: isolate;
@@ -204,6 +719,51 @@ h1 {
   color: rgba(164, 207, 238, 0.86);
 }
 
+.glass-window-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+}
+
+.glass-window-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.26rem;
+}
+
+.glass-window-control {
+  width: 1.18rem;
+  height: 1.18rem;
+  border-radius: 0.35rem;
+  border: 1px solid rgba(170, 220, 255, 0.38);
+  background: linear-gradient(180deg, rgba(25, 48, 74, 0.86), rgba(9, 18, 31, 0.86));
+  color: rgba(235, 248, 255, 0.95);
+  display: inline-grid;
+  place-items: center;
+  font: 700 0.62rem/1 "IBM Plex Sans", "Segoe UI", sans-serif;
+  cursor: pointer;
+  transition: transform 100ms ease, border-color 100ms ease;
+}
+
+.glass-window-control:hover {
+  transform: translateY(-1px);
+  border-color: rgba(214, 238, 255, 0.76);
+}
+
+.glass-window-control.min {
+  color: #b8def6;
+}
+
+.glass-window-control.max {
+  color: #d5eac8;
+}
+
+.glass-window-control.close {
+  color: #ffd4ca;
+  border-color: rgba(255, 178, 162, 0.5);
+  background: linear-gradient(180deg, rgba(98, 34, 24, 0.9), rgba(47, 14, 10, 0.9));
+}
+
 .glass-window-body {
   position: absolute;
   inset: 2.45rem 0.7rem 0.7rem;
@@ -279,6 +839,50 @@ h1 {
   white-space: pre-wrap;
 }
 
+.terminal-matrix {
+  border-radius: var(--radius-panel);
+  border: 1px solid rgba(147, 213, 255, 0.23);
+  background: rgba(2, 7, 13, 0.76);
+  overflow: auto;
+  outline: none;
+}
+
+.terminal-matrix:focus-visible {
+  box-shadow: inset 0 0 0 1px rgba(129, 205, 252, 0.58);
+}
+
+.editor-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.36rem;
+}
+
+.editor-tab {
+  border: 1px solid rgba(149, 213, 255, 0.25);
+  border-radius: 0.5rem;
+  background: rgba(6, 14, 24, 0.72);
+  color: var(--ink-1);
+  font: 600 0.68rem/1.1 "IBM Plex Sans", "Segoe UI", sans-serif;
+  letter-spacing: 0.04em;
+  padding: 0.38rem 0.52rem;
+  cursor: pointer;
+}
+
+.editor-tab.active {
+  color: #ecf8ff;
+  border-color: rgba(188, 231, 255, 0.65);
+  background: linear-gradient(180deg, rgba(21, 42, 64, 0.8), rgba(9, 18, 31, 0.76));
+}
+
+.editor-surface {
+  border-radius: var(--radius-panel);
+  outline: none;
+}
+
+.editor-surface:focus-visible pre {
+  box-shadow: inset 0 0 0 1px rgba(129, 205, 252, 0.58);
+}
+
 @keyframes mesh-drift {
   0% {
     transform: translate3d(0, 0, 0);
@@ -300,6 +904,19 @@ h1 {
   .terminal-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .sys-app-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .workspace-display.fullscreen {
+    padding: 0.46rem;
+  }
+
+  .workspace-display.fullscreen .display-shell {
+    min-height: calc(100vh - 0.92rem);
+    height: calc(100vh - 0.92rem);
+  }
 }
 
 @media (max-width: 680px) {
@@ -309,5 +926,28 @@ h1 {
 
   .terminal-metrics {
     grid-template-columns: 1fr;
+  }
+
+  .sys-app-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .settings-app dl,
+  .settings-actions,
+  .sys-launcher-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sys-app-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sys-running-list li {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .workspace-display-controls {
+    right: 0.46rem;
+    top: 0.46rem;
   }
 }

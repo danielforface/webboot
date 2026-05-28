@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:rust": "cargo test --manifest-path os-kernel/Cargo.toml --target wasm32-unknown-unknown --no-run"
   },
   "dependencies": {
     "next": "14.2.33",
@@ -20,6 +23,7 @@
     "@types/react-dom": "18.3.7",
     "eslint": "8.57.1",
     "eslint-config-next": "14.2.33",
-    "typescript": "5.8.3"
+    "typescript": "5.8.3",
+    "vitest": "1.6.1"
   }
 }
